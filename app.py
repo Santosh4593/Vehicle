@@ -33,7 +33,7 @@ print(classNames)
 print(len(classNames))
 
 # class index for our required detection classes
-required_class_index = [2, 3, 5, 7]
+required_class_index = [2, 3, 5, 7, 0]
 
 detected_classNames = []
 
@@ -67,8 +67,8 @@ def find_center(x, y, w, h):
 # List for store vehicle count information
 temp_up_list = []
 temp_down_list = []
-up_list = [0, 0, 0, 0]
-down_list = [0, 0, 0, 0]
+up_list = [0, 0, 0, 0, 0]
+down_list = [0, 0, 0, 0, 0]
 
 def count_vehicle(box_id, img):
 
@@ -101,6 +101,7 @@ def count_vehicle(box_id, img):
             if 'Down' in down_list:
                 down_list.remove('Down')
             down_list[index] = down_list[index] + 1
+    
 
     # Draw circle in the middle of the rectangle
     cv2.circle(img, center, 2, (0, 0, 255), -1)  # end here
@@ -150,14 +151,24 @@ def postProcess(outputs, img):
 
 
 def realTime(cap):
-    up_list = [0, 0, 0, 0]
-    down_list = [0, 0, 0, 0]
+
+    output_folder = './processed_videos/'
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Define the codec and create a VideoWriter object
+    # fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for the output video
+    # output_path = os.path.join(output_folder, 'annotated_video.mp4')  # Output video path
+    out = cv2.VideoWriter('recording.mp4',cv2.VideoWriter_fourcc(*'mp4v'), 20, (2160,1080))
 
     while True:
         success, img = cap.read()
 
         if not success or img is None:
             break
+        
+        
+
 
         img = cv2.resize(img, (0, 0), None, 0.5, 0.5)
         ih, iw, channels = img.shape
@@ -179,23 +190,31 @@ def realTime(cap):
         cv2.line(img, (0, up_line_position), (iw, up_line_position), (0, 0, 255), 2)
         cv2.line(img, (0, down_line_position), (iw, down_line_position), (0, 0, 255), 2)
 
-        # Draw counting texts in the frame
+      
         cv2.putText(img, "Up", (110, 20), cv2.FONT_HERSHEY_SIMPLEX, font_size, font_color, font_thickness)
-        # ... (Add other counting texts as in your existing code)
+        cv2.putText(img, "Down", (160, 20), cv2.FONT_HERSHEY_SIMPLEX, font_size, font_color, font_thickness)
+        cv2.putText(img, "Car:        "+str(up_list[0])+"     "+ str(down_list[0]), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, font_size, font_color, font_thickness)
+        cv2.putText(img, "Motorbike:  "+str(up_list[1])+"     "+ str(down_list[1]), (20, 60), cv2.FONT_HERSHEY_SIMPLEX, font_size, font_color, font_thickness)
+        cv2.putText(img, "Bus:        "+str(up_list[2])+"     "+ str(down_list[2]), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, font_size, font_color, font_thickness)
+        cv2.putText(img, "Truck:      "+str(up_list[3])+"     "+ str(down_list[3]), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, font_size, font_color, font_thickness)
+        cv2.putText(img, "person:     "+str(up_list[4])+"     "+ str(down_list[4]), (20, 120), cv2.FONT_HERSHEY_SIMPLEX, font_size, font_color, font_thickness)
+        
+        
 
         cv2.imshow('Annotated Video', img)
-
+        out.write(img)
         if cv2.waitKey(1) == ord('q'):
             break
 
     # Release the capture object and destroy all active windows
-    cap.release()
-    cv2.destroyAllWindows()
-
+    
+    # cap.release()
+    # cv2.destroyAllWindows()
+    out.release()
     # Write the vehicle counting information in a file and save it
     with open("data.csv", 'w') as f1:
         cwriter = csv.writer(f1)
-        cwriter.writerow(['Direction', 'car', 'motorbike', 'bus', 'truck'])
+        cwriter.writerow(['Direction', 'car', 'motorbike', 'bus', 'truck','Person'])
         up_list.insert(0, "Up")
         down_list.insert(0, "Down")
         
@@ -204,6 +223,7 @@ def realTime(cap):
     f1.close()
 
     # Finally release the capture object and destroy all active windows
+    
     cap.release()
     cv2.destroyAllWindows()
 
@@ -217,6 +237,8 @@ async def count():
     # else:
     # Continue with video capture initialization
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH,2160)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT,1080)
     realTime(cap)
 
 
